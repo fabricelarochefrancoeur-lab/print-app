@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  username    String   @unique
+  displayName String?
+  bio         String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+
+  prints    Print[]
+  editions  Edition[]
+  followers Follow[] @relation("following")
+  following Follow[] @relation("follower")
+}
+
+model Print {
+  id          String      @id @default(cuid())
+  title       String
+  content     String
+  images      Json        @default("[]")
+  status      PrintStatus @default(PENDING)
+  authorId    String
+  createdAt   DateTime    @default(now())
+  publishedAt DateTime?
+
+  author       User          @relation(fields: [authorId], references: [id])
+  editionPrint EditionPrint[]
+}
+
+enum PrintStatus {
+  PENDING
+  PUBLISHED
+}
+
+model Edition {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  createdAt DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id])
+  editionPrint EditionPrint[]
+
+  @@unique([userId, date])
+}
+
+model EditionPrint {
+  editionId String
+  printId   String
+
+  edition Edition @relation(fields: [editionId], references: [id])
+  print   Print   @relation(fields: [printId], references: [id])
+
+  @@id([editionId, printId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id])
+  following User @relation("following", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+}
