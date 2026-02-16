@@ -2,10 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Haxrcorp";
+  src: url("/fonts/haxrcorp-4089.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
   background-color: #ffffff;
   color: #000000;
-  font-family: "Courier New", Courier, monospace;
+  font-family: "Haxrcorp", monospace;
 }
 
 ::selection {
@@ -19,4 +27,52 @@ body {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.flip-perspective {
+  perspective: 1200px;
+}
+
+@keyframes flip-out-right {
+  from {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: rotateY(-90deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flip-in-right {
+  from {
+    transform: rotateY(90deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes flip-out-left {
+  from {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: rotateY(90deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flip-in-left {
+  from {
+    transform: rotateY(-90deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
 }

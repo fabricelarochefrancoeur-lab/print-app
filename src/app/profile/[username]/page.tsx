@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import FollowButton from "@/components/FollowButton";
 import PrintCard from "@/components/PrintCard";
+import PrintFlipViewer from "@/components/PrintFlipViewer";
 
 import Image from "next/image";
 
@@ -166,7 +167,7 @@ function PendingPrintCard({
         </span>
       </div>
 
-      <h3 className="font-mono text-3xl md:text-4xl font-bold leading-none tracking-tight px-4 md:px-6 mb-3">{print.title}</h3>
+      <h3 className="font-mono text-3xl md:text-4xl font-bold leading-none tracking-tight uppercase px-4 md:px-6 mb-3">{print.title}</h3>
 
       {print.images && print.images.length > 0 && (
         <div>
@@ -228,6 +229,21 @@ export default function ProfilePage() {
   const [publishedPrints, setPublishedPrints] = useState<any[]>([]);
   const [pendingPrints, setPendingPrints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listModal, setListModal] = useState<"followers" | "following" | null>(null);
+  const [listUsers, setListUsers] = useState<any[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+
+  const openList = (type: "followers" | "following") => {
+    setListModal(type);
+    setListLoading(true);
+    fetch(`/api/users/${username}/followers?type=${type}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setListUsers(Array.isArray(data) ? data : []);
+        setListLoading(false);
+      })
+      .catch(() => setListLoading(false));
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -325,18 +341,18 @@ export default function ProfilePage() {
                 <strong className="text-black">{profile._count.prints}</strong>{" "}
                 prints
               </span>
-              <span>
+              <button onClick={() => openList("followers")} className="hover:underline">
                 <strong className="text-black">
                   {profile._count.followers}
                 </strong>{" "}
                 followers
-              </span>
-              <span>
+              </button>
+              <button onClick={() => openList("following")} className="hover:underline">
                 <strong className="text-black">
                   {profile._count.following}
                 </strong>{" "}
                 following
-              </span>
+              </button>
             </div>
           </div>
         </div>
@@ -375,8 +391,9 @@ export default function ProfilePage() {
               No published PRINTs yet.
             </p>
           ) : (
-            <div className="space-y-4">
-              {publishedPrints.map((print: any) => (
+            <PrintFlipViewer
+              prints={publishedPrints}
+              renderCard={(print) => (
                 <article key={print.id} className="border-2 border-black bg-white">
                   <div className="p-4 md:p-6 pb-0">
                     <div className="flex items-center justify-between mb-2">
@@ -397,7 +414,7 @@ export default function ProfilePage() {
                             })}
                       </span>
                     </div>
-                    <h3 className="font-mono text-3xl md:text-4xl font-bold mb-3 leading-none tracking-tight">
+                    <h3 className="font-mono text-3xl md:text-4xl font-bold mb-3 leading-none tracking-tight uppercase">
                       {print.title}
                     </h3>
                   </div>
@@ -416,23 +433,89 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </article>
-              ))}
-            </div>
+              )}
+            />
           )}
         </div>
       ) : (
         publishedPrints.length > 0 && (
           <div>
             <h2 className="font-mono text-xl mb-4 border-b border-black pb-2">
-              Latest published PRINTs
+              Published PRINTs
             </h2>
-            <div className="space-y-4">
-              {publishedPrints.slice(0, 3).map((print: any) => (
-                <PrintCard key={print.id} print={print} />
-              ))}
-            </div>
+            <PrintFlipViewer
+              prints={publishedPrints}
+              renderCard={(print) => <PrintCard key={print.id} print={print} />}
+            />
           </div>
         )
+      )}
+
+      {/* Followers / Following modal */}
+      {listModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setListModal(null)}>
+          <div className="bg-white border-2 border-black w-full max-w-md max-h-[70vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b-2 border-black px-4 py-3">
+              <h3 className="font-mono text-xl font-bold uppercase">
+                {listModal}
+              </h3>
+              <button onClick={() => setListModal(null)} className="font-mono text-2xl leading-none hover:opacity-60">
+                x
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {listLoading ? (
+                <p className="font-pixel text-lg text-center py-8 animate-pulse">Loading...</p>
+              ) : listUsers.length === 0 ? (
+                <p className="font-pixel text-lg text-gray-500 text-center py-8">
+                  No {listModal} yet.
+                </p>
+              ) : (
+                listUsers.map((user: any) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 last:border-b-0"
+                  >
+                    <button
+                      onClick={() => {
+                        setListModal(null);
+                        router.push(`/profile/${user.username}`);
+                      }}
+                      className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-70 transition-opacity"
+                    >
+                      <div className="w-10 h-10 border-2 border-black flex items-center justify-center bg-gray-100 font-mono text-lg flex-shrink-0">
+                        {user.avatarUrl ? (
+                          <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" />
+                        ) : (
+                          user.username[0].toUpperCase()
+                        )}
+                      </div>
+                      <div className="text-left">
+                        <p className="font-mono text-sm font-bold">{user.displayName || user.username}</p>
+                        <p className="font-pixel text-xs text-gray-500">@{user.username}</p>
+                      </div>
+                    </button>
+                    {listModal === "following" && profile?.isOwnProfile && (
+                      <button
+                        onClick={async () => {
+                          await fetch(`/api/users/${user.id}/follow`, { method: "POST" });
+                          setListUsers((prev) => prev.filter((u: any) => u.id !== user.id));
+                          setProfile((prev: any) => prev ? {
+                            ...prev,
+                            _count: { ...prev._count, following: prev._count.following - 1 },
+                          } : prev);
+                        }}
+                        className="font-pixel text-xs border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-colors flex-shrink-0"
+                      >
+                        Unfollow
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

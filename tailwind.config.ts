@@ -9,9 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        serif: ['"Courier New"', "Courier", "monospace"],
-        pixel: ['"Courier New"', "Courier", "monospace"],
-        mono: ['"Courier New"', "Courier", "monospace"],
+        sans: ['"Haxrcorp"', "monospace"],
+        serif: ['"Haxrcorp"', "monospace"],
+        pixel: ['"Haxrcorp"', "monospace"],
+        mono: ['"Haxrcorp"', "monospace"],
       },
     },
   },

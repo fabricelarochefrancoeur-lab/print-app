@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import EditionHeader from "@/components/EditionHeader";
 import PrintCard from "@/components/PrintCard";
+import PrintFlipViewer from "@/components/PrintFlipViewer";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -44,6 +45,7 @@ function EditionIcon({
   isUpcoming,
   isSelected,
   countdown,
+  editionNumber,
   onClick,
 }: {
   date: string;
@@ -51,6 +53,7 @@ function EditionIcon({
   isUpcoming: boolean;
   isSelected: boolean;
   countdown: string;
+  editionNumber?: number;
   onClick: () => void;
 }) {
   const d = new Date(date);
@@ -58,31 +61,58 @@ function EditionIcon({
   const month = d.toLocaleDateString("en-GB", { month: "short" }).toUpperCase();
   const year = d.getFullYear();
 
+  if (isUpcoming) {
+    const [h, m, s] = countdown.split(":");
+    return (
+      <div className="flex flex-col items-center flex-shrink-0">
+        <p className="font-pixel text-sm text-gray-500 mb-3">Next edition drops in...</p>
+        <button
+          onClick={onClick}
+          className={`relative flex-shrink-0 w-32 overflow-hidden transition-all ${isSelected ? "scale-105" : "hover:scale-105"}`}
+        >
+          <Image src="/magazine.png" alt="" width={256} height={320} className="w-full h-auto" />
+          <div className="absolute inset-0 flex flex-col items-center justify-start gap-1 py-[12%] px-[12%]">
+            <div className="flex items-center gap-1.5">
+              <Image src="/logo.png" alt="Print" width={80} height={28} className="h-5 w-auto" />
+              {editionNumber && <span className="font-pixel text-base text-black font-bold">#{editionNumber}</span>}
+            </div>
+            <div className="text-center flex flex-col items-center">
+              <p className="font-mono text-4xl font-bold leading-none">{day}</p>
+              <p className="font-pixel text-sm leading-none">{month}</p>
+              <p className="font-pixel text-[10px] leading-none opacity-50">{year}</p>
+            </div>
+            <div className="flex items-center gap-1 font-mono text-[10px] font-bold">
+              <span>{h}</span>
+              <span className="animate-pulse">:</span>
+              <span>{m}</span>
+              <span className="animate-pulse">:</span>
+              <span>{s}</span>
+            </div>
+          </div>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
       onClick={onClick}
-      className={`flex-shrink-0 w-28 border-2 transition-all ${
-        isSelected
-          ? "border-black bg-black text-white scale-105"
-          : "border-black bg-white text-black hover:bg-gray-100"
-      }`}
+      className={`relative flex-shrink-0 w-32 overflow-hidden transition-all ${isSelected ? "scale-105" : "hover:scale-105"}`}
     >
-      <div className="border-b border-current px-2 py-1 flex justify-center">
-        <Image src="/logo.png" alt="Print" width={60} height={20} className={`h-3.5 w-auto ${isSelected ? "invert" : ""}`} />
-      </div>
-      <div className="px-2 py-3 text-center">
-        <p className="font-mono text-3xl font-bold leading-none">{day}</p>
-        <p className="font-pixel text-sm mt-1">{month}</p>
-        <p className="font-pixel text-[10px] opacity-60">{year}</p>
-      </div>
-      <div className="border-t border-current px-2 py-1 text-center">
-        {isUpcoming ? (
-          <p className="font-pixel text-[10px] animate-pulse">{countdown}</p>
-        ) : (
-          <p className="font-pixel text-[10px]">
-            {printCount} print{printCount !== 1 ? "s" : ""}
-          </p>
-        )}
+      <Image src="/magazine.png" alt="" width={256} height={320} className="w-full h-auto" />
+      <div className="absolute inset-0 flex flex-col items-center justify-start gap-1 py-[12%] px-[12%]">
+        <div className="flex items-center gap-1.5">
+          <Image src="/logo.png" alt="Print" width={80} height={28} className="h-5 w-auto" />
+          {editionNumber && <span className="font-pixel text-base text-black font-bold">#{editionNumber}</span>}
+        </div>
+        <div className="text-center flex flex-col items-center">
+          <p className="font-mono text-4xl font-bold leading-none">{day}</p>
+          <p className="font-pixel text-sm leading-none">{month}</p>
+          <p className="font-pixel text-[10px] leading-none opacity-50">{year}</p>
+        </div>
+        <p className="font-pixel text-[9px]">
+          {printCount} print{printCount !== 1 ? "s" : ""}
+        </p>
       </div>
     </button>
   );
@@ -148,23 +178,31 @@ export default function Home() {
   if (status === "unauthenticated") return null;
 
   // Build list: upcoming (tomorrow) + past editions
-  const editionItems: { date: string; printCount: number; isUpcoming: boolean }[] = [];
+  const editionItems: { date: string; printCount: number; isUpcoming: boolean; editionNumber: number }[] = [];
+
+  // Count past editions (excluding tomorrow)
+  const pastEditions = editions.filter((ed) => {
+    const edDate = new Date(ed.date).toISOString().split("T")[0];
+    return edDate !== tomorrow;
+  });
 
   // Always add the upcoming edition first (tomorrow's date)
   editionItems.push({
     date: tomorrow,
     printCount: 0,
     isUpcoming: true,
+    editionNumber: pastEditions.length + 1,
   });
 
-  // Add past editions
-  for (const ed of editions) {
+  // Add past editions: most recent = highest number, oldest = #1
+  for (let i = 0; i < pastEditions.length; i++) {
+    const ed = pastEditions[i];
     const edDate = new Date(ed.date).toISOString().split("T")[0];
-    if (edDate === tomorrow) continue;
     editionItems.push({
       date: edDate,
       printCount: ed._count?.editionPrint || 0,
       isUpcoming: false,
+      editionNumber: pastEditions.length - i,
     });
   }
 
@@ -181,14 +219,41 @@ export default function Home() {
               isUpcoming={item.isUpcoming}
               isSelected={selectedDate === item.date}
               countdown={countdown}
+              editionNumber={item.editionNumber}
               onClick={() => selectEdition(item.date)}
             />
           ))}
         </div>
       </div>
 
+      {/* Upcoming edition message */}
+      {selectedDate === tomorrow && (
+        <div className="text-center py-16">
+          <p className="font-pixel text-xl text-gray-500 mb-4">
+            This edition will be published tonight at midnight London time
+          </p>
+          <p className="font-pixel text-lg text-gray-400 mb-8">
+            Follow users to receive their PRINTs in your daily edition.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Link
+              href="/discover"
+              className="font-pixel text-lg border-2 border-black px-6 py-2 hover:bg-black hover:text-white transition-colors"
+            >
+              Discover
+            </Link>
+            <Link
+              href="/create"
+              className="font-pixel text-lg border-2 border-black px-6 py-2 hover:bg-black hover:text-white transition-colors"
+            >
+              Write a PRINT
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Selected edition content */}
-      {selectedDate && (
+      {selectedDate && selectedDate !== tomorrow && (
         <>
           <EditionHeader
             date={selectedDate}
@@ -201,41 +266,15 @@ export default function Home() {
             </div>
           ) : prints.length === 0 ? (
             <div className="text-center py-16">
-              {selectedDate === tomorrow ? (
-                <>
-                  <p className="font-pixel text-xl text-gray-500 mb-4">
-                    This edition will be published tonight at midnight London time
-                  </p>
-                  <p className="font-pixel text-lg text-gray-400 mb-8">
-                    Follow users to receive their PRINTs in your daily edition.
-                  </p>
-                  <div className="flex justify-center gap-4">
-                    <Link
-                      href="/discover"
-                      className="font-pixel text-lg border-2 border-black px-6 py-2 hover:bg-black hover:text-white transition-colors"
-                    >
-                      Discover
-                    </Link>
-                    <Link
-                      href="/create"
-                      className="font-pixel text-lg border-2 border-black px-6 py-2 hover:bg-black hover:text-white transition-colors"
-                    >
-                      Write a PRINT
-                    </Link>
-                  </div>
-                </>
-              ) : (
-                <p className="font-pixel text-xl text-gray-500 mb-4">
-                  No PRINTs in this edition.
-                </p>
-              )}
+              <p className="font-pixel text-xl text-gray-500 mb-4">
+                No PRINTs in this edition.
+              </p>
             </div>
           ) : (
-            <div className="columns-1 md:columns-2 gap-6">
-              {prints.map((print: any) => (
-                <PrintCard key={print.id} print={print} />
-              ))}
-            </div>
+            <PrintFlipViewer
+              prints={prints}
+              renderCard={(print) => <PrintCard key={print.id} print={print} />}
+            />
           )}
         </>
       )}

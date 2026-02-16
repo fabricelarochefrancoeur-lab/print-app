@@ -32,7 +32,7 @@ export default function PrintCard({ print }: PrintCardProps) {
           </span>
         </div>
 
-        <h2 className="font-mono text-3xl md:text-4xl font-bold mb-3 leading-none tracking-tight">
+        <h2 className="font-mono text-3xl md:text-4xl font-bold mb-3 leading-none tracking-tight uppercase">
           {print.title}
         </h2>
       </div>
