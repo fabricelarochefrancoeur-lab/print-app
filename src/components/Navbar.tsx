@@ -67,6 +67,9 @@ export default function Navbar() {
               >
                 Profile
               </Link>
+              <Link href="/settings" className="hover:underline">
+                Settings
+              </Link>
               <button
                 onClick={() => signOut()}
                 className="hover:underline text-gray-500"
@@ -123,6 +126,9 @@ export default function Navbar() {
             onClick={() => setMenuOpen(false)}
           >
             Profile
+          </Link>
+          <Link href="/settings" onClick={() => setMenuOpen(false)}>
+            Settings
           </Link>
           <button
             onClick={() => signOut()}

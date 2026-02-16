@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import FollowButton from "@/components/FollowButton";
 import PrintCard from "@/components/PrintCard";
-import Link from "next/link";
+
 import Image from "next/image";
 
 function PendingPrintCard({
@@ -313,14 +313,6 @@ export default function ProfilePage() {
                   userId={profile.id}
                   initialFollowing={profile.isFollowing}
                 />
-              )}
-              {profile.isOwnProfile && (
-                <Link
-                  href="/settings"
-                  className="font-pixel text-lg border-2 border-black px-4 py-2 hover:bg-black hover:text-white transition-colors"
-                >
-                  Settings
-                </Link>
               )}
             </div>
 
