@@ -229,6 +229,11 @@ export default function Home() {
       {/* Upcoming edition message */}
       {selectedDate === tomorrow && (
         <div className="text-center py-16">
+          <img
+            src="/London.png"
+            alt="Big Ben"
+            className="mx-auto mb-6 h-48 object-contain"
+          />
           <p className="font-pixel text-xl text-gray-500 mb-4">
             This edition will be published tonight at midnight London time
           </p>
