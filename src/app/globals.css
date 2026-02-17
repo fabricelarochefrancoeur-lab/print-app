@@ -162,3 +162,11 @@ body {
   50%  { opacity: 0.25; transform: translateX(15%); }
   100% { opacity: 0; transform: translateX(30%); }
 }
+
+/* ===== Newspaper page styles ===== */
+
+.newspaper-page {
+  font-variant-ligatures: common-ligatures;
+  -webkit-font-smoothing: antialiased;
+}
+

@@ -42,6 +42,16 @@ export async function POST(req: Request) {
       },
     });
 
+    // Create first edition for today so new users see it immediately
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    await prisma.edition.create({
+      data: {
+        userId: user.id,
+        date: today,
+      },
+    });
+
     return NextResponse.json({
       id: user.id,
       email: user.email,

@@ -51,6 +51,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ prints, date, editionId: edition.id });
     }
 
+    // Ensure today's edition exists
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    await prisma.edition.upsert({
+      where: { userId_date: { userId, date: today } },
+      update: {},
+      create: { userId, date: today },
+    });
+
     // List all editions for user
     const editions = await prisma.edition.findMany({
       where: { userId },

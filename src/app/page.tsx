@@ -4,7 +4,6 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import EditionHeader from "@/components/EditionHeader";
-import PrintCard from "@/components/PrintCard";
 import PrintFlipViewer from "@/components/PrintFlipViewer";
 import Link from "next/link";
 import Image from "next/image";
@@ -294,11 +293,6 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <EditionHeader
-                date={openedDate}
-                printCount={prints.length}
-              />
-
               {printsLoading ? (
                 <div className="text-center py-16 font-pixel text-xl animate-pulse">
                   Loading...
@@ -306,13 +300,16 @@ export default function Home() {
               ) : prints.length === 0 ? (
                 <div className="text-center py-16">
                   <p className="font-pixel text-xl text-gray-500 mb-4">
-                    No PRINTs in this edition.
+                    No PRINTs yet.
+                  </p>
+                  <p className="font-pixel text-lg text-gray-400">
+                    Follow users or write your first PRINT.
                   </p>
                 </div>
               ) : (
                 <PrintFlipViewer
                   prints={prints}
-                  renderCard={(print) => <PrintCard key={print.id} print={print} />}
+                  date={openedDate}
                 />
               )}
             </>
