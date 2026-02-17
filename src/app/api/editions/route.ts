@@ -56,12 +56,17 @@ export async function GET(req: Request) {
       where: { id: userId },
       select: { createdAt: true },
     });
-    const registrationDate = new Date(user!.createdAt);
-    registrationDate.setUTCHours(0, 0, 0, 0);
+    const createdAt = user!.createdAt;
+    // Truncate to start of UTC day
+    const registrationDate = new Date(Date.UTC(
+      createdAt.getUTCFullYear(),
+      createdAt.getUTCMonth(),
+      createdAt.getUTCDate()
+    ));
 
     // Ensure today's edition exists
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     await prisma.edition.upsert({
       where: { userId_date: { userId, date: today } },
       update: {},
@@ -76,6 +81,8 @@ export async function GET(req: Request) {
         _count: { select: { editionPrint: true } },
       },
     });
+
+    console.log("[editions] userId:", userId, "createdAt:", createdAt.toISOString(), "registrationDate:", registrationDate.toISOString(), "today:", today.toISOString(), "editions found:", editions.length, "edition dates:", editions.map(e => e.date.toISOString()));
 
     return NextResponse.json(editions);
   } catch (error) {
