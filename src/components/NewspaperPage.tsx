@@ -1,71 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-export type PageLayout = "two-col" | "hero-image" | "float-left" | "float-right";
-
-type ImageOrientation = "landscape" | "portrait" | "square" | "unknown";
-
-function SmartImage({
-  url,
-  textLength,
-  floatSide,
-}: {
-  url: string;
-  textLength: number;
-  floatSide: "left" | "right";
-}) {
-  const [orientation, setOrientation] = useState<ImageOrientation>("unknown");
-
-  const handleLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
-    if (w > h * 1.1) setOrientation("landscape");
-    else if (h > w * 1.1) setOrientation("portrait");
-    else setOrientation("square");
-  }, []);
-
-  const isPortraitOrSquare = orientation === "portrait" || orientation === "square";
-  const shouldFloat = isPortraitOrSquare && textLength > 200;
-
-  if (shouldFloat) {
-    return (
-      <div
-        className={`mb-1.5 overflow-hidden ${
-          floatSide === "left" ? "float-left mr-2" : "float-right ml-2"
-        }`}
-        style={{ width: "45%", maxWidth: "200px" }}
-      >
-        <Image
-          src={url}
-          alt=""
-          width={400}
-          height={600}
-          className="w-full h-auto"
-          onLoad={handleLoad}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="mb-2 -mx-3">
-      <div className="w-full">
-        <Image
-          src={url}
-          alt=""
-          width={1200}
-          height={800}
-          className="w-full h-auto"
-          onLoad={handleLoad}
-        />
-      </div>
-    </div>
-  );
-}
+export type PageLayout = "single";
 
 export interface NewspaperPageData {
   printId: string;
@@ -76,37 +14,42 @@ export interface NewspaperPageData {
   images: string[];
   layout: PageLayout;
   isFirstPage: boolean;
-  pageLabel?: string; // e.g. "continued"
+  pageLabel?: string;
 }
 
-// Simple seeded random from string
-function hashStr(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
-export function pickLayout(printId: string, hasImages: boolean): PageLayout {
-  const layouts: PageLayout[] = hasImages
-    ? ["two-col", "hero-image", "float-left", "float-right"]
-    : ["two-col"];
-  return layouts[hashStr(printId) % layouts.length];
+export function pickLayout(): PageLayout {
+  return "single";
 }
 
 export function splitPrintIntoPages(
   print: any,
   layout: PageLayout
 ): NewspaperPageData[] {
-  const paragraphs: string[] = (print.content || "")
-    .split(/\n+/)
-    .filter((p: string) => p.trim().length > 0);
+  // Split on newlines but preserve empty lines as empty paragraphs
+  const rawLines: string[] = (print.content || "").split(/\n/);
+  // Group into paragraphs: consecutive non-empty lines form a paragraph,
+  // empty lines create spacing (preserved as empty string entries)
+  const paragraphs: string[] = [];
+  for (const line of rawLines) {
+    if (line.trim().length === 0) {
+      // Preserve paragraph break
+      if (paragraphs.length > 0 && paragraphs[paragraphs.length - 1] !== "") {
+        paragraphs.push("");
+      }
+    } else {
+      paragraphs.push(line);
+    }
+  }
+  // Remove trailing empty
+  while (paragraphs.length > 0 && paragraphs[paragraphs.length - 1] === "") {
+    paragraphs.pop();
+  }
 
   const images: string[] = print.images || [];
   const date = print.publishedAt || print.createdAt;
 
-  const FIRST_PAGE_CHARS = layout === "hero-image" ? 500 : 900;
+  const hasImages = images.length > 0;
+  const FIRST_PAGE_CHARS = hasImages ? 500 : 900;
   const CONT_PAGE_CHARS = 1300;
 
   const pages: NewspaperPageData[] = [];
@@ -138,7 +81,7 @@ export function splitPrintIntoPages(
       date,
       paragraphs: pageParas,
       images: pageImages,
-      layout: isFirst ? layout : "two-col",
+      layout: "single",
       isFirstPage: isFirst,
       pageLabel: isFirst ? undefined : "continued",
     });
@@ -146,7 +89,6 @@ export function splitPrintIntoPages(
     isFirst = false;
   }
 
-  // If no paragraphs but we have a title/images
   if (pages.length === 0) {
     pages.push({
       printId: print.id,
@@ -155,7 +97,7 @@ export function splitPrintIntoPages(
       date,
       paragraphs: [],
       images,
-      layout,
+      layout: "single",
       isFirstPage: true,
     });
   }
@@ -165,7 +107,6 @@ export function splitPrintIntoPages(
 
 export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
   const { title, author, date, paragraphs, images, isFirstPage, pageLabel } = page;
-  const totalTextLength = paragraphs.reduce((sum, p) => sum + p.length, 0);
   const formattedDate = new Date(date).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
@@ -206,30 +147,34 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
 
       {/* Content area */}
       <div className="flex-1 overflow-hidden px-3 py-2">
+        {/* Images first, always full width, never cropped */}
         {images.length > 0 && (
-          <>
-            {images.map((url, i) => {
-              const floatSide = i % 2 === 0 ? "left" as const : "right" as const;
-              return (
-                <SmartImage
-                  key={i}
-                  url={url}
-                  textLength={totalTextLength}
-                  floatSide={floatSide}
+          <div className="mb-2 -mx-3">
+            {images.map((url, i) => (
+              <div key={i} className="w-full">
+                <Image
+                  src={url}
+                  alt=""
+                  width={1200}
+                  height={800}
+                  className="w-full h-auto"
+                  style={{ maxHeight: "40vh", objectFit: "contain", backgroundColor: "#f5f5f5" }}
                 />
-              );
-            })}
-          </>
+              </div>
+            ))}
+          </div>
         )}
 
-        {/* Text */}
+        {/* Text — single column, justified, preserving paragraph breaks */}
         <div className="text-sm leading-snug">
-          {paragraphs.map((p, i) => (
-            <p key={i} className="mb-1.5 font-pixel">{p}</p>
-          ))}
+          {paragraphs.map((p, i) =>
+            p === "" ? (
+              <div key={i} className="h-2" />
+            ) : (
+              <p key={i} className="mb-1.5 font-pixel text-justify">{p}</p>
+            )
+          )}
         </div>
-
-        {images.length > 0 && <div className="clear-both" />}
       </div>
     </article>
   );

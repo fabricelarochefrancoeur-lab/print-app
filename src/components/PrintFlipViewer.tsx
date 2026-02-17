@@ -10,48 +10,80 @@ interface PrintFlipViewerProps {
   renderCard?: (print: any) => ReactNode;
 }
 
-function CoverPage({ date, printCount, coverImage, coverAuthor }: { date: string; printCount: number; coverImage: string | null; coverAuthor: string | null }) {
+interface CoverData {
+  image: string;
+  authorUsername: string;
+  authorAvatar: string | null;
+}
+
+function CoverPage({ date, printCount, cover }: { date: string; printCount: number; cover: CoverData | null }) {
   const d = new Date(date);
+  const dayName = d.toLocaleDateString("en-GB", { weekday: "long" }).toUpperCase();
   const day = d.getDate();
   const month = d.toLocaleDateString("en-GB", { month: "long" }).toUpperCase();
   const year = d.getFullYear();
+  const dateStr = `${dayName}, ${day} ${month} ${year}`;
 
   return (
     <article
       className="border-2 border-black bg-white overflow-hidden flex flex-col"
       style={{ height: "calc(100vh - 120px)", minHeight: "500px", maxHeight: "800px" }}
     >
-      <div className="flex-1 flex flex-col items-center justify-center py-10 px-6">
-        <Image src="/logo.png" alt="PRINT" width={160} height={56} className="h-12 w-auto mb-6" />
+      <div className="flex-1 flex flex-col items-center justify-between py-12 px-6">
+        {/* Top section */}
+        <div className="flex flex-col items-center w-full">
+          {/* Logo */}
+          <Image src="/logo.png" alt="PRINT" width={300} height={100} className="h-16 w-auto" />
 
-        <div className="text-center mb-6">
-          <p className="font-mono text-6xl font-bold leading-none">{day}</p>
-          <p className="font-pixel text-xl mt-1">{month}</p>
-          <p className="font-pixel text-sm opacity-50">{year}</p>
+          {/* Date with horizontal lines */}
+          <div className="flex items-center gap-3 w-full mt-6">
+            <div className="flex-1 h-px bg-black" />
+            <span className="font-pixel text-xs tracking-widest whitespace-nowrap">
+              {dateStr}
+            </span>
+            <div className="flex-1 h-px bg-black" />
+          </div>
+
+          {/* Print count */}
+          <p className="font-pixel text-xs text-gray-500 mt-3">
+            {printCount} print{printCount !== 1 ? "s" : ""} in this edition
+          </p>
         </div>
 
-        {coverImage && (
-          <div className="w-full max-w-sm mb-6">
-            <div className="border border-black overflow-hidden">
+        {/* Cover image + author */}
+        {cover && (
+          <div className="w-full max-w-xs flex flex-col items-center">
+            <div className="w-full overflow-hidden">
               <Image
-                src={coverImage}
+                src={cover.image}
                 alt="Cover"
                 width={600}
                 height={400}
-                className="w-full h-auto object-cover"
+                className="w-full h-auto"
               />
             </div>
-            {coverAuthor && (
-              <p className="font-pixel text-xs text-gray-400 text-right mt-1">
-                image from @{coverAuthor}&apos;s PRINT
+            <div className="flex items-center gap-2 mt-2">
+              {cover.authorAvatar && (
+                <Image
+                  src={cover.authorAvatar}
+                  alt={cover.authorUsername}
+                  width={24}
+                  height={24}
+                  className="w-6 h-6 rounded-full object-cover"
+                />
+              )}
+              <p className="font-pixel text-xs text-gray-500">
+                image from @{cover.authorUsername}&apos;s PRINT
               </p>
-            )}
+            </div>
           </div>
         )}
 
-        <p className="font-pixel text-lg">
-          {printCount} PRINT{printCount !== 1 ? "S" : ""}
-        </p>
+        {/* Bottom double line */}
+        <div className="w-full">
+          <div className="w-full h-px bg-black" />
+          <div className="w-full h-px bg-black mt-1" />
+        </div>
       </div>
     </article>
   );
@@ -61,34 +93,37 @@ export default function PrintFlipViewer({ prints, date, renderCard }: PrintFlipV
   const hasCover = !!date;
   const useNewspaper = !renderCard;
 
+  // Pick a random cover image + author from prints
+  const coverData = useMemo<CoverData | null>(() => {
+    if (!hasCover) return null;
+    const entries: CoverData[] = [];
+    for (const p of prints) {
+      if (p.images && p.images.length > 0) {
+        for (const img of p.images) {
+          entries.push({
+            image: img,
+            authorUsername: p.author?.username || "",
+            authorAvatar: p.author?.avatarUrl || null,
+          });
+        }
+      }
+    }
+    if (entries.length === 0) return null;
+    return entries[Math.floor(Math.random() * entries.length)];
+  }, [prints, hasCover]);
+
   // Build newspaper pages from prints
   const newspaperPages = useMemo<NewspaperPageData[]>(() => {
     if (!useNewspaper) return [];
     const allPages: NewspaperPageData[] = [];
     for (const print of prints) {
-      const hasImages = print.images && print.images.length > 0;
-      const layout = pickLayout(print.id, hasImages);
+      const layout = pickLayout();
       const pages = splitPrintIntoPages(print, layout);
       allPages.push(...pages);
     }
     return allPages;
   }, [prints, useNewspaper]);
 
-  // Build pages: cover (if date provided) + prints
-  const coverData = useMemo(() => {
-    if (!hasCover) return { image: null, author: null };
-    const allEntries: { image: string; author: string }[] = [];
-    for (const p of prints) {
-      if (p.images && p.images.length > 0) {
-        for (const img of p.images) {
-          allEntries.push({ image: img, author: p.author?.username || "" });
-        }
-      }
-    }
-    if (allEntries.length === 0) return { image: null, author: null };
-    const pick = allEntries[Math.floor(Math.random() * allEntries.length)];
-    return { image: pick.image, author: pick.author };
-  }, [prints, hasCover]);
 
   const contentPageCount = useNewspaper ? newspaperPages.length : prints.length;
   const totalPages = contentPageCount + (hasCover ? 1 : 0);
@@ -111,7 +146,7 @@ export default function PrintFlipViewer({ prints, date, renderCard }: PrintFlipV
 
   const renderPage = useCallback((index: number) => {
     if (hasCover && index === 0) {
-      return <CoverPage date={date!} printCount={prints.length} coverImage={coverData.image} coverAuthor={coverData.author} />;
+      return <CoverPage date={date!} printCount={prints.length} cover={coverData} />;
     }
     const contentIndex = hasCover ? index - 1 : index;
     if (useNewspaper) {
