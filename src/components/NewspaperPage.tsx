@@ -14,6 +14,7 @@ export interface NewspaperPageData {
   images: string[];
   layout: PageLayout;
   isFirstPage: boolean;
+  isLastPageOfPrint: boolean;
   pageLabel?: string;
 }
 
@@ -49,7 +50,7 @@ export function splitPrintIntoPages(
   const date = print.publishedAt || print.createdAt;
 
   const hasImages = images.length > 0;
-  const FIRST_PAGE_CHARS = hasImages ? 500 : 900;
+  const FIRST_PAGE_CHARS = hasImages ? 300 : 900;
   const CONT_PAGE_CHARS = 1300;
 
   const pages: NewspaperPageData[] = [];
@@ -63,9 +64,10 @@ export function splitPrintIntoPages(
     let sliceEnd = 0;
 
     for (let i = 0; i < remaining.length; i++) {
-      charCount += remaining[i].length;
+      const nextCount = charCount + remaining[i].length;
+      if (nextCount > charLimit && sliceEnd > 0) break;
+      charCount = nextCount;
       sliceEnd = i + 1;
-      if (charCount >= charLimit && i < remaining.length - 1) break;
     }
 
     const pageParas = remaining.slice(0, sliceEnd);
@@ -83,6 +85,7 @@ export function splitPrintIntoPages(
       images: pageImages,
       layout: "single",
       isFirstPage: isFirst,
+      isLastPageOfPrint: false,
       pageLabel: isFirst ? undefined : "continued",
     });
 
@@ -99,14 +102,20 @@ export function splitPrintIntoPages(
       images,
       layout: "single",
       isFirstPage: true,
+      isLastPageOfPrint: true,
     });
+  }
+
+  // Mark the last page of this print
+  if (pages.length > 0) {
+    pages[pages.length - 1].isLastPageOfPrint = true;
   }
 
   return pages;
 }
 
 export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
-  const { title, author, date, paragraphs, images, isFirstPage, pageLabel } = page;
+  const { title, author, date, paragraphs, images, isFirstPage, isLastPageOfPrint, pageLabel } = page;
   const formattedDate = new Date(date).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
@@ -120,45 +129,43 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
     >
       {/* Header */}
       {isFirstPage && (
-        <div className="px-3 pt-2 pb-1 border-b border-black">
-          <div className="flex items-center justify-between">
+        <div className="px-5 pt-5 pb-4">
+          <h2 className="text-2xl md:text-3xl font-black leading-tight tracking-tight" style={{ fontFamily: "'BogartMedium', serif" }}>
+            {title}
+          </h2>
+          <div className="flex items-center justify-between mt-2">
             <Link
               href={`/profile/${author.username}`}
-              className="font-pixel text-xs hover:underline uppercase tracking-wider"
+              className="font-pixel text-xs hover:underline"
             >
-              @{author.username}
+              Printed by @{author.username}
             </Link>
             <span className="font-pixel text-xs text-gray-400">{formattedDate}</span>
           </div>
-          <h2 className="font-mono text-2xl md:text-3xl font-black leading-tight tracking-tight uppercase mt-1">
-            {title}
-          </h2>
         </div>
       )}
 
-      {/* Continuation label */}
+      {/* Continued from previous page */}
       {pageLabel && (
-        <div className="px-3 pt-2 pb-1 border-b border-gray-300">
-          <span className="font-pixel text-xs text-gray-400 italic uppercase tracking-widest">
-            {title} — {pageLabel}
+        <div className="px-5 pt-3 pb-2">
+          <span className="font-pixel text-[10px] text-gray-400 italic tracking-wide">
+            ← Continued from previous page
           </span>
         </div>
       )}
 
       {/* Content area */}
-      <div className="flex-1 overflow-hidden px-3 py-2">
-        {/* Images first, always full width, never cropped */}
+      <div className="flex-1 overflow-hidden px-5 py-3 flex flex-col">
+        {/* Images first, always full width, never cropped, sized to fit with text */}
         {images.length > 0 && (
-          <div className="mb-2 -mx-3">
+          <div className="mb-5 -mx-5 flex-shrink-0">
             {images.map((url, i) => (
               <div key={i} className="w-full">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={url}
                   alt=""
-                  width={1200}
-                  height={800}
-                  className="w-full h-auto"
-                  style={{ maxHeight: "40vh", objectFit: "contain", backgroundColor: "#f5f5f5" }}
+                  style={{ maxWidth: "100%", maxHeight: images.length > 1 ? "25vh" : "35vh", objectFit: "contain", display: "block", margin: "0 auto" }}
                 />
               </div>
             ))}
@@ -166,16 +173,25 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
         )}
 
         {/* Text — single column, justified, preserving paragraph breaks */}
-        <div className="text-sm leading-snug">
+        <div className="flex-1 overflow-hidden text-sm leading-snug">
           {paragraphs.map((p, i) =>
             p === "" ? (
               <div key={i} className="h-2" />
             ) : (
-              <p key={i} className="mb-1.5 font-pixel text-justify">{p}</p>
+              <p key={i} className="mb-2.5 text-justify" style={{ fontFamily: "'Bogart', serif" }}>{p}</p>
             )
           )}
         </div>
       </div>
+
+      {/* Continued on next page */}
+      {!isLastPageOfPrint && (
+        <div className="px-5 pb-3 pt-1 text-right flex-shrink-0">
+          <span className="font-pixel text-[10px] text-gray-400 italic tracking-wide">
+            Continued on next page →
+          </span>
+        </div>
+      )}
     </article>
   );
 }

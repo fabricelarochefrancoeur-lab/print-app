@@ -10,6 +10,30 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "BogartMedium";
+  src: url("/fonts/BogartMedium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "BogartMedium";
+  src: url("/fonts/BogartMediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bogart";
+  src: url("/fonts/BogartRegular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
   background-color: #ffffff;
   color: #000000;

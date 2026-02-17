@@ -246,6 +246,10 @@ export default function Home() {
               Tap the magazine to open it
             </p>
           )}
+          {/* Newsboy illustration */}
+          <div className="flex justify-center mt-4">
+            <Image src="/boy.png" alt="" width={160} height={160} className="opacity-80" />
+          </div>
         </div>
       )}
 
@@ -270,8 +274,11 @@ export default function Home() {
                 alt="Big Ben"
                 className="mx-auto mb-6 h-48 object-contain"
               />
-              <p className="font-pixel text-xl text-gray-500 mb-4">
+              <p className="font-pixel text-xl text-gray-500 mb-2">
                 This edition will be published tonight at midnight London time
+              </p>
+              <p className="font-mono text-2xl text-black mb-4">
+                {countdown}
               </p>
               <p className="font-pixel text-lg text-gray-400 mb-8">
                 Follow users to receive their PRINTs in your daily edition.

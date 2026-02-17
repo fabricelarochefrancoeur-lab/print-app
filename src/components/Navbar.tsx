@@ -51,7 +51,7 @@ export default function Navbar() {
         {session ? (
           <>
             {/* Desktop nav */}
-            <div className="hidden md:flex items-center gap-6 font-pixel text-lg">
+            <div className="hidden md:flex items-center gap-6 font-pixel text-lg uppercase">
               <Link href="/" className="hover:underline">
                 Editions
               </Link>
@@ -92,7 +92,7 @@ export default function Navbar() {
             </button>
           </>
         ) : (
-          <div className="flex items-center gap-4 font-pixel text-lg">
+          <div className="flex items-center gap-4 font-pixel text-lg uppercase">
             <Link href="/login" className="hover:underline">
               Login
             </Link>
@@ -108,7 +108,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && session && (
-        <div className="md:hidden border-t-2 border-black bg-white px-4 py-3 flex flex-col gap-3 font-pixel text-lg">
+        <div className="md:hidden border-t-2 border-black bg-white px-4 py-3 flex flex-col gap-3 font-pixel text-lg uppercase">
           <div className="text-sm text-gray-500 pb-2 border-b border-dashed border-gray-300">
             Next edition in: {countdown}
           </div>
