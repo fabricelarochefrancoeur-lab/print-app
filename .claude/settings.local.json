@@ -16,7 +16,10 @@
       "Bash(curl:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npx prisma db execute:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx -y json:*)"
     ]
   }
 }

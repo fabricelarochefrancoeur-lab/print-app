@@ -8,6 +8,7 @@ import PrintCard from "@/components/PrintCard";
 import PrintFlipViewer from "@/components/PrintFlipViewer";
 import Link from "next/link";
 import Image from "next/image";
+import EditionCarousel from "@/components/EditionCarousel";
 
 function useCountdown() {
   const [timeLeft, setTimeLeft] = useState("");
@@ -123,6 +124,7 @@ export default function Home() {
   const router = useRouter();
   const [editions, setEditions] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [openedDate, setOpenedDate] = useState<string | null>(null);
   const [prints, setPrints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [printsLoading, setPrintsLoading] = useState(false);
@@ -147,16 +149,26 @@ export default function Home() {
           const eds = Array.isArray(data) ? data : [];
           setEditions(eds);
 
-          // Auto-select the upcoming edition (tomorrow)
-          selectEdition(tomorrow);
+          // Auto-focus the upcoming edition (tomorrow) without opening
+          setSelectedDate(tomorrow);
           setLoading(false);
         })
         .catch(() => setLoading(false));
     }
   }, [status, router, tomorrow]);
 
+  // Step 1: select/focus a magazine in the carousel (no fetch)
   const selectEdition = (date: string) => {
     setSelectedDate(date);
+    // Close any opened edition when navigating
+    setOpenedDate(null);
+    setPrints([]);
+  };
+
+  // Step 2: open a magazine (fetch its prints)
+  const openEdition = (date: string) => {
+    setSelectedDate(date);
+    setOpenedDate(date);
     setPrintsLoading(true);
     fetch(`/api/editions?date=${date}`)
       .then((res) => res.json())
@@ -177,7 +189,7 @@ export default function Home() {
 
   if (status === "unauthenticated") return null;
 
-  // Build list: upcoming (tomorrow) + past editions
+  // Build list: oldest at top → most recent → upcoming at bottom
   const editionItems: { date: string; printCount: number; isUpcoming: boolean; editionNumber: number }[] = [];
 
   // Count past editions (excluding tomorrow)
@@ -186,16 +198,8 @@ export default function Home() {
     return edDate !== tomorrow;
   });
 
-  // Always add the upcoming edition first (tomorrow's date)
-  editionItems.push({
-    date: tomorrow,
-    printCount: 0,
-    isUpcoming: true,
-    editionNumber: pastEditions.length + 1,
-  });
-
-  // Add past editions: most recent = highest number, oldest = #1
-  for (let i = 0; i < pastEditions.length; i++) {
+  // Add past editions in reverse: oldest first (#1 at top), most recent last
+  for (let i = pastEditions.length - 1; i >= 0; i--) {
     const ed = pastEditions[i];
     const edDate = new Date(ed.date).toISOString().split("T")[0];
     editionItems.push({
@@ -206,82 +210,114 @@ export default function Home() {
     });
   }
 
+  // Upcoming edition last (bottom of carousel)
+  editionItems.push({
+    date: tomorrow,
+    printCount: 0,
+    isUpcoming: true,
+    editionNumber: pastEditions.length + 1,
+  });
+
   return (
     <div>
-      {/* Edition icons - scrollable grid */}
-      <div className="mb-8">
-        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide flex-wrap justify-center">
-          {editionItems.map((item) => (
-            <EditionIcon
-              key={item.date}
-              date={item.date}
-              printCount={item.printCount}
-              isUpcoming={item.isUpcoming}
-              isSelected={selectedDate === item.date}
-              countdown={countdown}
-              editionNumber={item.editionNumber}
-              onClick={() => selectEdition(item.date)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Upcoming edition message */}
-      {selectedDate === tomorrow && (
-        <div className="text-center py-16">
-          <img
-            src="/London.png"
-            alt="Big Ben"
-            className="mx-auto mb-6 h-48 object-contain"
+      {/* Edition carousel - 3D vertical roulette */}
+      {!openedDate && (
+        <div className="mb-8">
+          <EditionCarousel
+            items={editionItems}
+            selectedDate={selectedDate}
+            countdown={countdown}
+            onSelect={selectEdition}
+            onOpen={openEdition}
+            renderItem={(item, isCenter) => (
+              <EditionIcon
+                date={item.date}
+                printCount={item.printCount}
+                isUpcoming={item.isUpcoming}
+                isSelected={isCenter}
+                countdown={countdown}
+                editionNumber={item.editionNumber}
+                onClick={() => {}}
+              />
+            )}
           />
-          <p className="font-pixel text-xl text-gray-500 mb-4">
-            This edition will be published tonight at midnight London time
-          </p>
-          <p className="font-pixel text-lg text-gray-400 mb-8">
-            Follow users to receive their PRINTs in your daily edition.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link
-              href="/discover"
-              className="font-pixel text-lg border-2 border-black px-6 py-2 hover:bg-black hover:text-white transition-colors"
-            >
-              Discover
-            </Link>
-            <Link
-              href="/create"
-              className="font-pixel text-lg border-2 border-black px-6 py-2 hover:bg-black hover:text-white transition-colors"
-            >
-              Write a PRINT
-            </Link>
-          </div>
+          {/* Hint text */}
+          {selectedDate && (
+            <p className="text-center font-pixel text-xs text-gray-400 mt-2">
+              Tap the magazine to open it
+            </p>
+          )}
         </div>
       )}
 
-      {/* Selected edition content */}
-      {selectedDate && selectedDate !== tomorrow && (
-        <>
-          <EditionHeader
-            date={selectedDate}
-            printCount={prints.length}
-          />
+      {/* Opened edition content */}
+      {openedDate && (
+        <div>
+          {/* Back button to return to carousel */}
+          <button
+            onClick={() => {
+              setOpenedDate(null);
+              setPrints([]);
+            }}
+            className="font-pixel text-sm text-gray-500 hover:text-black transition-colors mb-4 flex items-center gap-1"
+          >
+            &larr; Back to editions
+          </button>
 
-          {printsLoading ? (
-            <div className="text-center py-16 font-pixel text-xl animate-pulse">
-              Loading...
-            </div>
-          ) : prints.length === 0 ? (
+          {openedDate === tomorrow ? (
             <div className="text-center py-16">
+              <img
+                src="/London.png"
+                alt="Big Ben"
+                className="mx-auto mb-6 h-48 object-contain"
+              />
               <p className="font-pixel text-xl text-gray-500 mb-4">
-                No PRINTs in this edition.
+                This edition will be published tonight at midnight London time
               </p>
+              <p className="font-pixel text-lg text-gray-400 mb-8">
+                Follow users to receive their PRINTs in your daily edition.
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link
+                  href="/discover"
+                  className="font-pixel text-lg border-2 border-black px-6 py-2 hover:bg-black hover:text-white transition-colors"
+                >
+                  Discover
+                </Link>
+                <Link
+                  href="/create"
+                  className="font-pixel text-lg border-2 border-black px-6 py-2 hover:bg-black hover:text-white transition-colors"
+                >
+                  Write a PRINT
+                </Link>
+              </div>
             </div>
           ) : (
-            <PrintFlipViewer
-              prints={prints}
-              renderCard={(print) => <PrintCard key={print.id} print={print} />}
-            />
+            <>
+              <EditionHeader
+                date={openedDate}
+                printCount={prints.length}
+              />
+
+              {printsLoading ? (
+                <div className="text-center py-16 font-pixel text-xl animate-pulse">
+                  Loading...
+                </div>
+              ) : prints.length === 0 ? (
+                <div className="text-center py-16">
+                  <p className="font-pixel text-xl text-gray-500 mb-4">
+                    No PRINTs in this edition.
+                  </p>
+                </div>
+              ) : (
+                <PrintFlipViewer
+                  prints={prints}
+                  renderCard={(print) => <PrintCard key={print.id} print={print} />}
+                />
+              )}
+            </>
           )}
-        </>
+        </div>
       )}
     </div>
   );
