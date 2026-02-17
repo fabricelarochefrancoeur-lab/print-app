@@ -73,9 +73,9 @@ export async function GET(req: Request) {
       create: { userId, date: today },
     });
 
-    // List editions from registration date onwards
+    // List editions from the day after registration onwards
     const editions = await prisma.edition.findMany({
-      where: { userId, date: { gte: registrationDate } },
+      where: { userId, date: { gt: registrationDate } },
       orderBy: { date: "desc" },
       include: {
         _count: { select: { editionPrint: true } },
