@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -13,6 +13,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -143,6 +145,54 @@ export default function SettingsPage() {
           {loading ? "Saving..." : saved ? "Saved!" : "Save"}
         </button>
       </form>
+
+      {/* Delete account */}
+      <div className="mt-12 border-t-2 border-black pt-6">
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full font-mono text-lg border-2 border-red-600 text-red-600 px-4 py-2 hover:bg-red-600 hover:text-white transition-colors"
+          >
+            Delete my account
+          </button>
+        ) : (
+          <div className="border-2 border-red-600 p-4">
+            <p className="font-pixel text-sm text-red-600 mb-4">
+              Are you sure? This will permanently delete your account and all your PRINTs. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 font-mono text-lg border-2 border-black px-4 py-2 hover:bg-black hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    const res = await fetch("/api/account", { method: "DELETE" });
+                    if (res.ok) {
+                      await signOut({ redirect: false });
+                      router.push("/");
+                    } else {
+                      alert("Failed to delete account");
+                    }
+                  } catch {
+                    alert("Failed to delete account");
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                className="flex-1 font-mono text-lg border-2 border-red-600 bg-red-600 text-white px-4 py-2 hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete my account"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
