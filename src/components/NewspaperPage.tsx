@@ -130,7 +130,7 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
       {/* Header */}
       {isFirstPage && (
         <div className="px-5 pt-5 pb-4">
-          <h2 className="text-2xl md:text-3xl font-black leading-tight tracking-tight" style={{ fontFamily: "'BogartMedium', serif" }}>
+          <h2 className="text-2xl md:text-3xl font-black leading-tight tracking-tight font-pixel">
             {title}
           </h2>
           <div className="flex items-center justify-between mt-2">
@@ -178,7 +178,7 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
             p === "" ? (
               <div key={i} className="h-2" />
             ) : (
-              <p key={i} className="mb-2.5 text-justify" style={{ fontFamily: "'Bogart', serif" }}>{p}</p>
+              <p key={i} className="mb-2.5 text-justify font-pixel">{p}</p>
             )
           )}
         </div>
