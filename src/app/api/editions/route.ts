@@ -51,6 +51,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ prints, date, editionId: edition.id });
     }
 
+    // Get user's registration date
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { createdAt: true },
+    });
+    const registrationDate = new Date(user!.createdAt);
+    registrationDate.setUTCHours(0, 0, 0, 0);
+
     // Ensure today's edition exists
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
@@ -60,9 +68,9 @@ export async function GET(req: Request) {
       create: { userId, date: today },
     });
 
-    // List all editions for user
+    // List editions from registration date onwards
     const editions = await prisma.edition.findMany({
-      where: { userId },
+      where: { userId, date: { gte: registrationDate } },
       orderBy: { date: "desc" },
       include: {
         _count: { select: { editionPrint: true } },
