@@ -21,6 +21,7 @@ model User {
   editions  Edition[]
   followers Follow[] @relation("following")
   following Follow[] @relation("follower")
+  likes     Like[]
 }
 
 model Print {
@@ -35,6 +36,7 @@ model Print {
 
   author       User          @relation(fields: [authorId], references: [id])
   editionPrint EditionPrint[]
+  likes        Like[]
 }
 
 enum PrintStatus {
@@ -62,6 +64,17 @@ model EditionPrint {
   print   Print   @relation(fields: [printId], references: [id])
 
   @@id([editionId, printId])
+}
+
+model Like {
+  userId  String
+  printId String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  print Print @relation(fields: [printId], references: [id])
+
+  @@id([userId, printId])
 }
 
 model Follow {

@@ -23,12 +23,17 @@ export async function DELETE() {
       where: { userId },
     });
 
-    // 3. Follows (both directions)
+    // 3. Likes (given and received)
+    await prisma.like.deleteMany({
+      where: { OR: [{ userId }, { print: { authorId: userId } }] },
+    });
+
+    // 4. Follows (both directions)
     await prisma.follow.deleteMany({
       where: { OR: [{ followerId: userId }, { followingId: userId }] },
     });
 
-    // 4. Prints
+    // 5. Prints
     await prisma.print.deleteMany({
       where: { authorId: userId },
     });

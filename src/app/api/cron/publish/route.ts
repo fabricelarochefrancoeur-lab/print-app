@@ -52,10 +52,19 @@ export async function GET(req: Request) {
       followerMap.set(f.followerId, list);
     }
 
+    // Also add each author's own prints to their own edition
+    for (const authorId of authorIds) {
+      const list = followerMap.get(authorId) || [];
+      if (!list.includes(authorId)) {
+        list.push(authorId);
+      }
+      followerMap.set(authorId, list);
+    }
+
     let editionsCreated = 0;
 
     for (const [userId, followedAuthorIds] of followerMap) {
-      // Get prints from followed authors published today
+      // Get prints from followed authors (and own prints) published today
       const printsForUser = publishedPrints.filter((p) =>
         followedAuthorIds.includes(p.authorId)
       );
