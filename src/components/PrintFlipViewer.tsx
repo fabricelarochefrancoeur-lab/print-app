@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, memo, ReactNode } from "react";
 import Image from "next/image";
 import NewspaperPage, {
   splitPrintIntoPages,
@@ -85,7 +85,7 @@ function CoverPage({ date, printCount, cover }: { date: string; printCount: numb
   );
 }
 
-export default function PrintFlipViewer({ prints, date, renderCard }: PrintFlipViewerProps) {
+function PrintFlipViewer({ prints, date, renderCard }: PrintFlipViewerProps) {
   const hasCover = !!date;
   const useNewspaper = !renderCard;
 
@@ -136,16 +136,6 @@ export default function PrintFlipViewer({ prints, date, renderCard }: PrintFlipV
   const goNext = useCallback(() => {
     setCurrentIndex((i) => Math.min(totalPages - 1, i + 1));
   }, [totalPages]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") goPrev();
-      if (e.key === "ArrowRight") goNext();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [goPrev, goNext]);
 
   if (prints.length === 0) return null;
 
@@ -209,3 +199,5 @@ export default function PrintFlipViewer({ prints, date, renderCard }: PrintFlipV
     </div>
   );
 }
+
+export default memo(PrintFlipViewer);

@@ -46,7 +46,9 @@ export default function LikeButton({ printId }: { printId: string }) {
     }
   };
 
-  if (loading) return null;
+  if (loading) {
+    return <div className="h-8" />;
+  }
 
   return (
     <div className="flex items-center gap-3">
