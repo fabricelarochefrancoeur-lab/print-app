@@ -1,17 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import LikeButton from "./LikeButton";
 
 export type PageLayout = "single";
-
-/** Page container style constants — reused for DOM measurement */
-export const PAGE_STYLE = {
-  height: "calc(100vh - 120px)",
-  minHeight: "500px",
-  maxHeight: "800px",
-} as const;
 
 export interface NewspaperPageData {
   printId: string;
@@ -30,7 +22,7 @@ export function pickLayout(): PageLayout {
   return "single";
 }
 
-/** Parse print content into paragraphs (no page splitting — that's done by measurement) */
+/** Parse print content into paragraphs */
 export function parsePrintParagraphs(content: string): string[] {
   const rawLines: string[] = (content || "").split(/\n/);
   const paragraphs: string[] = [];
@@ -49,7 +41,7 @@ export function parsePrintParagraphs(content: string): string[] {
   return paragraphs;
 }
 
-/** Character-based fallback splitting (used before DOM measurement completes) */
+/** Split a print into pages by character count */
 export function splitPrintIntoPages(
   print: any,
   layout: PageLayout
@@ -59,8 +51,8 @@ export function splitPrintIntoPages(
   const date = print.publishedAt || print.createdAt;
 
   const hasImages = images.length > 0;
-  const FIRST_PAGE_CHARS = hasImages ? 200 : 600;
-  const CONT_PAGE_CHARS = 800;
+  const FIRST_PAGE_CHARS = hasImages ? 300 : 1000;
+  const CONT_PAGE_CHARS = 1200;
 
   const pages: NewspaperPageData[] = [];
   let remaining = [...paragraphs];
@@ -131,10 +123,7 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
   });
 
   return (
-    <article
-      className="newspaper-page border-2 border-black bg-white overflow-hidden flex flex-col"
-      style={PAGE_STYLE}
-    >
+    <article className="newspaper-page border-2 border-black bg-white flex flex-col">
       {/* Header */}
       {isFirstPage && (
         <div className="px-5 pt-5 pb-4">
@@ -163,10 +152,10 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
       )}
 
       {/* Content area */}
-      <div className="flex-1 overflow-hidden px-5 pt-3 pb-5 flex flex-col">
-        {/* Images first, always full width, never cropped, sized to fit with text */}
+      <div className="px-5 pt-3 pb-5">
+        {/* Images first, always full width, never cropped */}
         {images.length > 0 && (
-          <div className="mb-5 -mx-5 flex-shrink-0">
+          <div className="mb-5 -mx-5">
             {images.map((url, i) => (
               <div key={i} className="w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -181,7 +170,7 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
         )}
 
         {/* Text — single column, justified, preserving paragraph breaks */}
-        <div className="flex-1 overflow-hidden text-sm leading-snug">
+        <div className="text-sm leading-snug">
           {paragraphs.map((p, i) =>
             p === "" ? (
               <div key={i} className="h-2" />
