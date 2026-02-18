@@ -44,8 +44,13 @@ export default function ClippingsPage() {
         </p>
       ) : (
         <div>
-          {prints.map((print) => (
-            <PrintCard key={print.id} print={print} />
+          {prints.map((print, index) => (
+            <div key={print.id}>
+              <div className="font-pixel text-xs text-gray-400 mb-1">
+                #{index + 1} — Clipped: {print.clippedAt ? new Date(print.clippedAt).toLocaleString() : "unknown"}
+              </div>
+              <PrintCard print={print} />
+            </div>
           ))}
         </div>
       )}

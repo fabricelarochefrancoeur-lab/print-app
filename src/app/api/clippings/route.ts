@@ -33,9 +33,12 @@ export async function GET() {
     // Sort explicitly to guarantee most-recently-clipped first
     clips.sort((a, b) => new Date(b.clippedAt).getTime() - new Date(a.clippedAt).getTime());
 
+    console.log("[clippings] order:", clips.map((c, i) => `${i}: printId=${c.printId} clippedAt=${c.clippedAt.toISOString()}`));
+
     const prints = clips.map((clip) => ({
       ...clip.print,
       images: clip.print.images || [],
+      clippedAt: clip.clippedAt.toISOString(),
     }));
 
     return NextResponse.json(prints);
