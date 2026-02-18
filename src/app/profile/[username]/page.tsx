@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import FollowButton from "@/components/FollowButton";
+import LikeButton from "@/components/LikeButton";
 import PrintCard from "@/components/PrintCard";
 import PrintFlipViewer from "@/components/PrintFlipViewer";
 
@@ -428,8 +429,11 @@ export default function ProfilePage() {
                     </div>
                   )}
                   <div className="p-4 md:p-6 pt-3">
-                    <div className="font-pixel text-lg leading-relaxed whitespace-pre-wrap">
+                    <div className="font-pixel text-lg leading-relaxed whitespace-pre-wrap mb-3">
                       {print.content}
+                    </div>
+                    <div className="border-t border-dashed border-gray-300 pt-2">
+                      <LikeButton printId={print.id} />
                     </div>
                   </div>
                 </article>

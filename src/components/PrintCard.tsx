@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import LikeButton from "@/components/LikeButton";
 
 interface PrintCardProps {
   print: {
@@ -58,8 +59,11 @@ export default function PrintCard({ print }: PrintCardProps) {
           {print.content}
         </div>
 
-        <div className="text-right font-pixel text-xs text-gray-400 border-t border-dashed border-gray-300 pt-2">
-          {new Date(print.createdAt).toLocaleDateString("en-GB")}
+        <div className="flex items-center justify-between border-t border-dashed border-gray-300 pt-2">
+          <LikeButton printId={print.id} />
+          <span className="font-pixel text-xs text-gray-400">
+            {new Date(print.createdAt).toLocaleDateString("en-GB")}
+          </span>
         </div>
       </div>
     </article>
