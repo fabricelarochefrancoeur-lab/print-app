@@ -61,6 +61,9 @@ export default function Navbar() {
               <Link href="/discover" className="hover:underline">
                 Discover
               </Link>
+              <Link href="/clippings" className="hover:underline">
+                Clippings
+              </Link>
               <Link
                 href={`/profile/${(session.user as any).username}`}
                 className="hover:underline"
@@ -120,6 +123,9 @@ export default function Navbar() {
           </Link>
           <Link href="/discover" onClick={() => setMenuOpen(false)}>
             Discover
+          </Link>
+          <Link href="/clippings" onClick={() => setMenuOpen(false)}>
+            Clippings
           </Link>
           <Link
             href={`/profile/${(session.user as any).username}`}

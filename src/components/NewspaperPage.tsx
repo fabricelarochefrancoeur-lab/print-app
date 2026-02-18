@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import LikeButton from "./LikeButton";
+import ClipButton from "./ClipButton";
 
 export type PageLayout = "single";
 
@@ -183,8 +184,9 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
 
       {/* Like button on last page */}
       {isLastPageOfPrint && (
-        <div className="px-5 pb-4 pt-3 flex-shrink-0 border-t-2 border-gray-300">
+        <div className="px-5 pb-4 pt-3 flex-shrink-0 border-t-2 border-gray-300 flex items-center gap-2">
           <LikeButton printId={page.printId} />
+          <ClipButton printId={page.printId} />
         </div>
       )}
 

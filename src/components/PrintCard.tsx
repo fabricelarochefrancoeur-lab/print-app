@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import LikeButton from "@/components/LikeButton";
+import ClipButton from "@/components/ClipButton";
 
 interface PrintCardProps {
   print: {
@@ -60,7 +61,10 @@ export default function PrintCard({ print }: PrintCardProps) {
         </div>
 
         <div className="flex items-center justify-between border-t border-dashed border-gray-300 pt-2">
-          <LikeButton printId={print.id} />
+          <div className="flex items-center gap-2">
+            <LikeButton printId={print.id} />
+            <ClipButton printId={print.id} />
+          </div>
           <span className="font-pixel text-xs text-gray-400">
             {new Date(print.createdAt).toLocaleDateString("en-GB")}
           </span>
