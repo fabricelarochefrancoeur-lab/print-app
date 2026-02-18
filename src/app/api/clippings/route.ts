@@ -30,6 +30,9 @@ export async function GET() {
       },
     });
 
+    // Sort explicitly to guarantee most-recently-clipped first
+    clips.sort((a, b) => new Date(b.clippedAt).getTime() - new Date(a.clippedAt).getTime());
+
     const prints = clips.map((clip) => ({
       ...clip.print,
       images: clip.print.images || [],
