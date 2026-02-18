@@ -58,7 +58,7 @@ export default function LikeButton({ printId }: { printId: string }) {
             : "border-black hover:bg-black hover:text-white"
         }`}
       >
-        {liked ? "♥ Liked" : "♡ Like"}
+        {liked ? "LIKED" : "LIKE"}
       </button>
 
       {isAuthor && likeCount > 0 && (
