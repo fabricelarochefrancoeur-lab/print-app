@@ -59,8 +59,8 @@ export function splitPrintIntoPages(
   const date = print.publishedAt || print.createdAt;
 
   const hasImages = images.length > 0;
-  const FIRST_PAGE_CHARS = hasImages ? 300 : 900;
-  const CONT_PAGE_CHARS = 1300;
+  const FIRST_PAGE_CHARS = hasImages ? 200 : 600;
+  const CONT_PAGE_CHARS = 800;
 
   const pages: NewspaperPageData[] = [];
   let remaining = [...paragraphs];
@@ -163,7 +163,7 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
       )}
 
       {/* Content area */}
-      <div className="flex-1 overflow-hidden px-5 py-3 flex flex-col">
+      <div className="flex-1 overflow-hidden px-5 pt-3 pb-5 flex flex-col">
         {/* Images first, always full width, never cropped, sized to fit with text */}
         {images.length > 0 && (
           <div className="mb-5 -mx-5 flex-shrink-0">
@@ -194,7 +194,7 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
 
       {/* Like button on last page */}
       {isLastPageOfPrint && (
-        <div className="px-5 pb-3 pt-2 flex-shrink-0 border-t border-gray-200">
+        <div className="px-5 pb-4 pt-3 flex-shrink-0 border-t-2 border-gray-300">
           <LikeButton printId={page.printId} />
         </div>
       )}

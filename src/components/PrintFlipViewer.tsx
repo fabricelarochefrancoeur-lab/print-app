@@ -101,10 +101,10 @@ function useMeasuredPages(prints: any[], enabled: boolean): NewspaperPageData[] 
       const contNextHeight = contNextEl.offsetHeight;
       container.removeChild(contNextEl);
 
-      // Measure like button footer height
+      // Measure like button footer height (matches pt-3 pb-4 border-t-2)
       const likeEl = document.createElement("div");
-      likeEl.style.cssText = "padding:8px 20px 12px 20px;border-top:1px solid #e5e7eb;";
-      likeEl.innerHTML = `<div style="height:32px"></div>`; // approximate like button height
+      likeEl.style.cssText = "padding:12px 20px 16px 20px;border-top:2px solid #d1d5db;";
+      likeEl.innerHTML = `<div style="height:36px"></div>`; // approximate like button height
       container.appendChild(likeEl);
       const likeHeight = likeEl.offsetHeight;
       container.removeChild(likeEl);
@@ -118,8 +118,10 @@ function useMeasuredPages(prints: any[], enabled: boolean): NewspaperPageData[] 
         imagesHeight = images.length * perImageMaxH + 20; // +20 for mb-5 margin
       }
 
-      // Content area padding (px-5 py-3 = 20px horizontal, 12px vertical)
-      const contentPadding = 24; // 12px top + 12px bottom
+      // Content area padding (px-5 pt-3 pb-5 = 12px top + 20px bottom)
+      // Also account for article border-2 (4px total) and safety margin (4px)
+      const contentPadding = 32; // 12px top + 20px bottom
+      const borderAndSafety = 8; // 4px border + 4px safety
 
       // Measure each paragraph height
       const paraHeights: number[] = [];
@@ -152,7 +154,7 @@ function useMeasuredPages(prints: any[], enabled: boolean): NewspaperPageData[] 
 
       while (remaining.length > 0) {
         // Budget calculation
-        let budget = pageHeight - contentPadding;
+        let budget = pageHeight - contentPadding - borderAndSafety;
         if (isFirst) {
           budget -= headerHeight;
           budget -= imagesHeight;
