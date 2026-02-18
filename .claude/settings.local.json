@@ -19,7 +19,15 @@
       "Bash(git push:*)",
       "Bash(npx prisma db execute:*)",
       "Bash(npx tsx:*)",
-      "Bash(npx -y json:*)"
+      "Bash(npx -y json:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npm run build:*)",
+      "Bash(gh api:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep:*)"
     ]
   }
 }
