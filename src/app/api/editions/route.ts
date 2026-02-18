@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { publishPendingPrints } from "@/lib/publish";
 
 export async function GET(req: Request) {
   try {
@@ -10,9 +9,6 @@ export async function GET(req: Request) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Fallback: publish any pending prints in case the cron was missed
-    await publishPendingPrints();
 
     const userId = (session.user as any).id;
     const { searchParams } = new URL(req.url);
