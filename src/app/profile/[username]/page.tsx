@@ -398,27 +398,24 @@ export default function ProfilePage() {
               renderCard={(print) => (
                 <article key={print.id} className="border-2 border-black bg-white">
                   <div className="p-4 md:p-6 pb-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-pixel text-xs text-gray-400">
-                        @{print.author.username}
-                      </span>
-                      <span className="font-pixel text-xs text-gray-400">
-                        Published {print.publishedAt
-                          ? new Date(print.publishedAt).toLocaleDateString("en-GB", {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            })
-                          : new Date(print.createdAt).toLocaleDateString("en-GB", {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            })}
-                      </span>
-                    </div>
-                    <h3 className="font-mono text-3xl md:text-4xl font-bold mb-3 leading-none tracking-tight uppercase">
+                    <h3 className="text-2xl md:text-3xl font-black leading-tight tracking-tight font-pixel">
                       {print.title}
                     </h3>
+                    <div className="flex items-center justify-between mt-2 mb-3">
+                      <span className="font-pixel text-xs">
+                        Printed by @{print.author.username}
+                      </span>
+                      <span className="font-pixel text-xs text-gray-400">
+                        {(print.publishedAt
+                          ? new Date(print.publishedAt)
+                          : new Date(print.createdAt)
+                        ).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
                   </div>
                   {print.images && print.images.length > 0 && (
                     <div>

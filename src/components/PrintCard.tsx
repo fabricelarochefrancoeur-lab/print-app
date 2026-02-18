@@ -22,21 +22,24 @@ export default function PrintCard({ print }: PrintCardProps) {
   return (
     <article className="border-2 border-black bg-white break-inside-avoid mb-6">
       <div className="p-4 md:p-6 pb-0">
-        <div className="flex items-center gap-2 mb-3">
-          <Link
-            href={`/profile/${print.author.username}`}
-            className="font-pixel text-sm hover:underline"
-          >
-            @{print.author.username}
-          </Link>
-          <span className="text-gray-400 font-pixel text-xs">
-            {print.author.displayName}
-          </span>
-        </div>
-
-        <h2 className="font-mono text-3xl md:text-4xl font-bold mb-3 leading-none tracking-tight uppercase">
+        <h2 className="text-2xl md:text-3xl font-black leading-tight tracking-tight font-pixel">
           {print.title}
         </h2>
+        <div className="flex items-center justify-between mt-2 mb-3">
+          <Link
+            href={`/profile/${print.author.username}`}
+            className="font-pixel text-xs hover:underline"
+          >
+            Printed by @{print.author.username}
+          </Link>
+          <span className="font-pixel text-xs text-gray-400">
+            {new Date(print.createdAt).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
+        </div>
       </div>
 
       {print.images && print.images.length > 0 && (
@@ -60,14 +63,9 @@ export default function PrintCard({ print }: PrintCardProps) {
           {print.content}
         </div>
 
-        <div className="flex items-center justify-between border-t border-dashed border-gray-300 pt-2">
-          <div className="flex items-center gap-2">
-            <LikeButton printId={print.id} />
-            <ClipButton printId={print.id} />
-          </div>
-          <span className="font-pixel text-xs text-gray-400">
-            {new Date(print.createdAt).toLocaleDateString("en-GB")}
-          </span>
+        <div className="flex items-center gap-2 border-t border-dashed border-gray-300 pt-2">
+          <LikeButton printId={print.id} />
+          <ClipButton printId={print.id} />
         </div>
       </div>
     </article>
