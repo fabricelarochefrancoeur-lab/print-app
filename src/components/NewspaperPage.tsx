@@ -6,6 +6,13 @@ import LikeButton from "./LikeButton";
 
 export type PageLayout = "single";
 
+/** Page container style constants — reused for DOM measurement */
+export const PAGE_STYLE = {
+  height: "calc(100vh - 120px)",
+  minHeight: "500px",
+  maxHeight: "800px",
+} as const;
+
 export interface NewspaperPageData {
   printId: string;
   title: string;
@@ -23,18 +30,12 @@ export function pickLayout(): PageLayout {
   return "single";
 }
 
-export function splitPrintIntoPages(
-  print: any,
-  layout: PageLayout
-): NewspaperPageData[] {
-  // Split on newlines but preserve empty lines as empty paragraphs
-  const rawLines: string[] = (print.content || "").split(/\n/);
-  // Group into paragraphs: consecutive non-empty lines form a paragraph,
-  // empty lines create spacing (preserved as empty string entries)
+/** Parse print content into paragraphs (no page splitting — that's done by measurement) */
+export function parsePrintParagraphs(content: string): string[] {
+  const rawLines: string[] = (content || "").split(/\n/);
   const paragraphs: string[] = [];
   for (const line of rawLines) {
     if (line.trim().length === 0) {
-      // Preserve paragraph break
       if (paragraphs.length > 0 && paragraphs[paragraphs.length - 1] !== "") {
         paragraphs.push("");
       }
@@ -42,11 +43,18 @@ export function splitPrintIntoPages(
       paragraphs.push(line);
     }
   }
-  // Remove trailing empty
   while (paragraphs.length > 0 && paragraphs[paragraphs.length - 1] === "") {
     paragraphs.pop();
   }
+  return paragraphs;
+}
 
+/** Character-based fallback splitting (used before DOM measurement completes) */
+export function splitPrintIntoPages(
+  print: any,
+  layout: PageLayout
+): NewspaperPageData[] {
+  const paragraphs = parsePrintParagraphs(print.content);
   const images: string[] = print.images || [];
   const date = print.publishedAt || print.createdAt;
 
@@ -107,7 +115,6 @@ export function splitPrintIntoPages(
     });
   }
 
-  // Mark the last page of this print
   if (pages.length > 0) {
     pages[pages.length - 1].isLastPageOfPrint = true;
   }
@@ -126,7 +133,7 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
   return (
     <article
       className="newspaper-page border-2 border-black bg-white overflow-hidden flex flex-col"
-      style={{ height: "calc(100vh - 120px)", minHeight: "500px", maxHeight: "800px" }}
+      style={PAGE_STYLE}
     >
       {/* Header */}
       {isFirstPage && (

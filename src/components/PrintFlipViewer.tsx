@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo, ReactNode } from "react";
 import Image from "next/image";
-import NewspaperPage, { splitPrintIntoPages, pickLayout, NewspaperPageData } from "./NewspaperPage";
+import NewspaperPage, {
+  splitPrintIntoPages,
+  parsePrintParagraphs,
+  pickLayout,
+  NewspaperPageData,
+  PAGE_STYLE,
+} from "./NewspaperPage";
 
 interface PrintFlipViewerProps {
   prints: any[];
@@ -14,6 +20,254 @@ interface CoverData {
   image: string;
   authorUsername: string;
   authorAvatar: string | null;
+}
+
+/**
+ * Hook that measures actual DOM heights to split prints into pages
+ * that fit within the fixed-height newspaper page container.
+ */
+function useMeasuredPages(prints: any[], enabled: boolean): NewspaperPageData[] | null {
+  const [pages, setPages] = useState<NewspaperPageData[] | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+
+  // Create hidden measurement container on mount
+  useEffect(() => {
+    if (!enabled) return;
+    const div = document.createElement("div");
+    div.style.cssText =
+      "position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:0;overflow:hidden;";
+    document.body.appendChild(div);
+    measureRef.current = div;
+    return () => {
+      document.body.removeChild(div);
+      measureRef.current = null;
+    };
+  }, [enabled]);
+
+  // Measure and split
+  const measure = useCallback(() => {
+    const container = measureRef.current;
+    if (!container || !enabled || prints.length === 0) return;
+
+    // Get the actual page height from a temporary element with the same styles
+    const sizer = document.createElement("div");
+    sizer.style.cssText = `height:${PAGE_STYLE.height};min-height:${PAGE_STYLE.minHeight};max-height:${PAGE_STYLE.maxHeight};width:100%;`;
+    container.appendChild(sizer);
+    const pageHeight = sizer.offsetHeight;
+    container.removeChild(sizer);
+
+    if (pageHeight === 0) return;
+
+    // Set measurement container to same width as a real page would have
+    // Use the first .newspaper-page in the DOM if available, else use container width
+    const existingPage = document.querySelector(".newspaper-page");
+    const pageWidth = existingPage ? (existingPage as HTMLElement).offsetWidth : container.offsetWidth || 400;
+    container.style.width = `${pageWidth}px`;
+
+    const allPages: NewspaperPageData[] = [];
+
+    for (const print of prints) {
+      const paragraphs = parsePrintParagraphs(print.content);
+      const images: string[] = print.images || [];
+      const date = print.publishedAt || print.createdAt;
+
+      // Measure header height
+      const headerEl = document.createElement("div");
+      headerEl.style.cssText = "padding:20px 20px 16px 20px;";
+      headerEl.innerHTML = `
+        <h2 class="text-2xl md:text-3xl font-black leading-tight tracking-tight font-pixel">${escapeHtml(print.title)}</h2>
+        <div class="flex items-center justify-between mt-2">
+          <span class="font-pixel text-xs">Printed by @${escapeHtml(print.author?.username || "")}</span>
+          <span class="font-pixel text-xs text-gray-400">${new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
+        </div>
+      `;
+      container.appendChild(headerEl);
+      const headerHeight = headerEl.offsetHeight;
+      container.removeChild(headerEl);
+
+      // Measure "continued from" label height
+      const contFromEl = document.createElement("div");
+      contFromEl.style.cssText = "padding:12px 20px 8px 20px;";
+      contFromEl.innerHTML = `<span class="font-pixel text-[10px] text-gray-400 italic tracking-wide">\u2190 Continued from previous page</span>`;
+      container.appendChild(contFromEl);
+      const contFromHeight = contFromEl.offsetHeight;
+      container.removeChild(contFromEl);
+
+      // Measure "continued on next page" footer height
+      const contNextEl = document.createElement("div");
+      contNextEl.style.cssText = "padding:4px 20px 12px 20px;text-align:right;";
+      contNextEl.innerHTML = `<span class="font-pixel text-[10px] text-gray-400 italic tracking-wide">Continued on next page \u2192</span>`;
+      container.appendChild(contNextEl);
+      const contNextHeight = contNextEl.offsetHeight;
+      container.removeChild(contNextEl);
+
+      // Measure like button footer height
+      const likeEl = document.createElement("div");
+      likeEl.style.cssText = "padding:8px 20px 12px 20px;border-top:1px solid #e5e7eb;";
+      likeEl.innerHTML = `<div style="height:32px"></div>`; // approximate like button height
+      container.appendChild(likeEl);
+      const likeHeight = likeEl.offsetHeight;
+      container.removeChild(likeEl);
+
+      // Estimate images height from viewport-based max-height constraints
+      // (images load async so we can't measure them directly — use the CSS max-height as budget)
+      let imagesHeight = 0;
+      if (images.length > 0) {
+        const vh = window.innerHeight / 100;
+        const perImageMaxH = images.length > 1 ? 25 * vh : 35 * vh;
+        imagesHeight = images.length * perImageMaxH + 20; // +20 for mb-5 margin
+      }
+
+      // Content area padding (px-5 py-3 = 20px horizontal, 12px vertical)
+      const contentPadding = 24; // 12px top + 12px bottom
+
+      // Measure each paragraph height
+      const paraHeights: number[] = [];
+      const paraContainer = document.createElement("div");
+      paraContainer.style.cssText = "padding:0 20px;";
+      paraContainer.className = "text-sm leading-snug";
+      for (const p of paragraphs) {
+        const el = document.createElement(p === "" ? "div" : "p");
+        if (p === "") {
+          el.className = "h-2";
+        } else {
+          el.className = "mb-2.5 text-justify font-pixel";
+          el.textContent = p;
+        }
+        paraContainer.appendChild(el);
+      }
+      container.appendChild(paraContainer);
+      // Measure each child
+      for (let i = 0; i < paraContainer.children.length; i++) {
+        const child = paraContainer.children[i] as HTMLElement;
+        paraHeights.push(child.offsetHeight + parseFloat(getComputedStyle(child).marginBottom || "0"));
+      }
+      container.removeChild(paraContainer);
+
+      // Distribute paragraphs across pages
+      const printPages: NewspaperPageData[] = [];
+      let remaining = [...paragraphs];
+      let remainingHeights = [...paraHeights];
+      let isFirst = true;
+
+      while (remaining.length > 0) {
+        // Budget calculation
+        let budget = pageHeight - contentPadding;
+        if (isFirst) {
+          budget -= headerHeight;
+          budget -= imagesHeight;
+        } else {
+          budget -= contFromHeight;
+        }
+
+        // Tentatively assume this might not be the last page → reserve space for "continued" footer
+        // We'll adjust after we see if all remaining paragraphs fit
+        const budgetWithContinued = budget - contNextHeight;
+        const budgetWithLike = budget - likeHeight;
+
+        // Try to fit paragraphs with "continued" footer budget
+        let usedHeight = 0;
+        let sliceEnd = 0;
+        for (let i = 0; i < remaining.length; i++) {
+          const h = remainingHeights[i];
+          if (usedHeight + h > budgetWithContinued && sliceEnd > 0) {
+            break;
+          }
+          usedHeight += h;
+          sliceEnd = i + 1;
+        }
+
+        // Check if all remaining paragraphs fit with the like button budget instead
+        {
+          let totalH = 0;
+          for (let i = 0; i < remaining.length; i++) totalH += remainingHeights[i];
+          if (totalH <= budgetWithLike) {
+            sliceEnd = remaining.length;
+          }
+        }
+
+        // Ensure at least one paragraph per page to avoid infinite loops
+        if (sliceEnd === 0) sliceEnd = 1;
+
+        const pageParas = remaining.slice(0, sliceEnd);
+        remaining = remaining.slice(sliceEnd);
+        remainingHeights = remainingHeights.slice(sliceEnd);
+
+        const isLast = remaining.length === 0;
+
+        printPages.push({
+          printId: print.id,
+          title: print.title,
+          author: print.author,
+          date,
+          paragraphs: pageParas,
+          images: isFirst ? images : [],
+          layout: "single",
+          isFirstPage: isFirst,
+          isLastPageOfPrint: isLast,
+          pageLabel: isFirst ? undefined : "continued",
+        });
+
+        isFirst = false;
+      }
+
+      // Handle empty prints
+      if (printPages.length === 0) {
+        printPages.push({
+          printId: print.id,
+          title: print.title,
+          author: print.author,
+          date,
+          paragraphs: [],
+          images,
+          layout: "single",
+          isFirstPage: true,
+          isLastPageOfPrint: true,
+        });
+      }
+
+      allPages.push(...printPages);
+    }
+
+    setPages(allPages);
+  }, [prints, enabled]);
+
+  // Run measurement after render and on resize
+  useEffect(() => {
+    if (!enabled) return;
+    // Delay to ensure fonts are loaded and layout is stable
+    const timer = setTimeout(measure, 50);
+
+    const observer = new ResizeObserver(() => {
+      measure();
+    });
+    if (measureRef.current) {
+      // Observe the body to detect viewport changes
+      observer.observe(document.body);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [measure, enabled]);
+
+  // Re-measure when prints change
+  useEffect(() => {
+    if (!enabled) return;
+    const timer = setTimeout(measure, 50);
+    return () => clearTimeout(timer);
+  }, [prints, measure, enabled]);
+
+  return pages;
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function CoverPage({ date, printCount, cover }: { date: string; printCount: number; cover: CoverData | null }) {
@@ -112,8 +366,9 @@ export default function PrintFlipViewer({ prints, date, renderCard }: PrintFlipV
     return entries[Math.floor(Math.random() * entries.length)];
   }, [prints, hasCover]);
 
-  // Build newspaper pages from prints
-  const newspaperPages = useMemo<NewspaperPageData[]>(() => {
+  // Build newspaper pages: use DOM measurement for accurate pagination, with char-based fallback
+  const measuredPages = useMeasuredPages(prints, useNewspaper);
+  const fallbackPages = useMemo<NewspaperPageData[]>(() => {
     if (!useNewspaper) return [];
     const allPages: NewspaperPageData[] = [];
     for (const print of prints) {
@@ -123,6 +378,7 @@ export default function PrintFlipViewer({ prints, date, renderCard }: PrintFlipV
     }
     return allPages;
   }, [prints, useNewspaper]);
+  const newspaperPages = measuredPages || fallbackPages;
 
 
   const contentPageCount = useNewspaper ? newspaperPages.length : prints.length;
