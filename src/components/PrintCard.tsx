@@ -63,7 +63,7 @@ export default function PrintCard({ print }: PrintCardProps) {
           {print.content}
         </div>
 
-        <div className="flex items-center gap-2 border-t border-dashed border-gray-300 pt-2">
+        <div className="flex items-center justify-between border-t border-dashed border-gray-300 pt-2">
           <LikeButton printId={print.id} />
           <ClipButton printId={print.id} />
         </div>

@@ -66,7 +66,7 @@ export default function LikeButton({ printId }: { printId: string }) {
       {isAuthor && likeCount > 0 && (
         <button
           onClick={() => setShowLikers(!showLikers)}
-          className="font-pixel text-xs text-gray-500 hover:text-black transition-colors"
+          className="font-pixel text-xs text-gray-500 underline hover:text-black transition-colors"
         >
           {likeCount} like{likeCount !== 1 ? "s" : ""}
         </button>

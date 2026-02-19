@@ -184,7 +184,7 @@ export default function NewspaperPage({ page }: { page: NewspaperPageData }) {
 
       {/* Like button on last page */}
       {isLastPageOfPrint && (
-        <div className="px-5 pb-4 pt-3 flex-shrink-0 border-t-2 border-gray-300 flex items-center gap-2">
+        <div className="px-5 pb-4 pt-3 flex-shrink-0 border-t-2 border-gray-300 flex items-center justify-between">
           <LikeButton printId={page.printId} />
           <ClipButton printId={page.printId} />
         </div>

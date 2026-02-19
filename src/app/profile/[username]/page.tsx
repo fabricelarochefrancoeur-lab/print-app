@@ -430,7 +430,7 @@ export default function ProfilePage() {
                     <div className="font-pixel text-lg leading-relaxed whitespace-pre-wrap mb-3">
                       {print.content}
                     </div>
-                    <div className="border-t border-dashed border-gray-300 pt-2 flex items-center gap-2">
+                    <div className="border-t border-dashed border-gray-300 pt-2 flex items-center justify-between">
                       <LikeButton printId={print.id} />
                       <ClipButton printId={print.id} />
                     </div>
