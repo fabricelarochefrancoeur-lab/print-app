@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { authLimiter, getIP } from "@/lib/ratelimit";
+import { sanitize } from "@/lib/sanitize";
+import { validateEmail, validateUsername } from "@/lib/validation";
+import { audit } from "@/lib/audit";
+import { addWelcomePrintsToEdition } from "@/lib/welcome";
 
 export async function POST(req: Request) {
   try {
+    const ip = getIP(req);
+    try {
+      await authLimiter.consume(ip);
+    } catch {
+      return NextResponse.json(
+        { error: "Too many login attempts. Try again in 15 minutes." },
+        { status: 429 }
+      );
+    }
+
     const { email, password, username, displayName } = await req.json();
 
     if (!email || !password || !username) {
@@ -11,6 +26,16 @@ export async function POST(req: Request) {
         { error: "Email, password and username are required" },
         { status: 400 }
       );
+    }
+
+    const emailError = validateEmail(email);
+    if (emailError) {
+      return NextResponse.json({ error: emailError }, { status: 400 });
+    }
+
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      return NextResponse.json({ error: usernameError }, { status: 400 });
     }
 
     if (password.length < 8) {
@@ -54,24 +79,32 @@ export async function POST(req: Request) {
 
     const hashedPassword = await hash(password, 12);
 
+    const cleanUsername = sanitize(username);
+    const cleanDisplayName = displayName ? sanitize(displayName) : cleanUsername;
+
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        username,
-        displayName: displayName || username,
+        username: cleanUsername,
+        displayName: cleanDisplayName,
       },
     });
+
+    await audit("ACCOUNT_CREATED", ip, user.id);
 
     // Create first edition for today so new users see it immediately
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
-    await prisma.edition.create({
+    const edition = await prisma.edition.create({
       data: {
         userId: user.id,
         date: today,
       },
     });
+
+    // Add welcome PRINTs to the first edition
+    await addWelcomePrintsToEdition(edition.id);
 
     return NextResponse.json({
       id: user.id,
