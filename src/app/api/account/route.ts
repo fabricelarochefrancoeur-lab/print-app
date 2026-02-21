@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { audit } from "@/lib/audit";
+import { getIP } from "@/lib/ratelimit";
 
-export async function DELETE() {
+export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -11,6 +13,7 @@ export async function DELETE() {
     }
 
     const userId = (session.user as any).id;
+    const ip = getIP(req);
 
     // Delete all related data in correct order
     // 1. Edition prints (junction table)
@@ -38,7 +41,10 @@ export async function DELETE() {
       where: { authorId: userId },
     });
 
-    // 5. User
+    // 6. Audit log before deleting user
+    await audit("ACCOUNT_DELETED", ip, userId);
+
+    // 7. User
     await prisma.user.delete({
       where: { id: userId },
     });

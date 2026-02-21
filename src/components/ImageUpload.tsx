@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { validateImageFile } from "@/lib/image-validation";
 
 interface ImageUploadProps {
   onUpload: (url: string) => void;
@@ -14,6 +15,13 @@ export default function ImageUpload({ onUpload, images }: ImageUploadProps) {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      alert(validationError);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
 
     setUploading(true);
     try {
@@ -43,7 +51,7 @@ export default function ImageUpload({ onUpload, images }: ImageUploadProps) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         onChange={handleUpload}
         className="hidden"
         id="image-upload"

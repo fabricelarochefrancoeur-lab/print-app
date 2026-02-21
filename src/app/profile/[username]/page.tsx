@@ -10,6 +10,7 @@ import PrintCard from "@/components/PrintCard";
 import PrintFlipViewer from "@/components/PrintFlipViewer";
 
 import Image from "next/image";
+import { validateImageFile } from "@/lib/image-validation";
 
 function PendingPrintCard({
   print,
@@ -69,6 +70,13 @@ function PendingPrintCard({
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     setUploading(true);
     try {
       const formData = new FormData();
@@ -130,7 +138,7 @@ function PendingPrintCard({
 
           <label className={`font-pixel text-sm border border-dashed border-black px-3 py-1 cursor-pointer hover:bg-gray-50 inline-block ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
             {uploading ? "Uploading..." : "+ Add image"}
-            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} className="hidden" />
           </label>
 
           <div className="flex gap-2 pt-2 border-t border-dashed border-gray-300">

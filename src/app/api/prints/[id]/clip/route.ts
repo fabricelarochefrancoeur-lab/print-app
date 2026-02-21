@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { clipsLimiter } from "@/lib/ratelimit";
 
 export async function GET(
   req: Request,
@@ -41,6 +42,15 @@ export async function POST(
 
     const userId = (session.user as any).id;
     const printId = params.id;
+
+    try {
+      await clipsLimiter.consume(userId);
+    } catch {
+      return NextResponse.json(
+        { error: "Too many clips. Max 100 per hour." },
+        { status: 429 }
+      );
+    }
 
     const existing = await prisma.clip.findUnique({
       where: { userId_printId: { userId, printId } },

@@ -2,12 +2,25 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { printsLimiter } from "@/lib/ratelimit";
+import { sanitize } from "@/lib/sanitize";
+import { validatePrintTitle, validatePrintContent } from "@/lib/validation";
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as any).id;
+    try {
+      await printsLimiter.consume(userId);
+    } catch {
+      return NextResponse.json(
+        { error: "Too many prints. Max 10 per hour." },
+        { status: 429 }
+      );
     }
 
     const { title, content, images } = await req.json();
@@ -19,12 +32,25 @@ export async function POST(req: Request) {
       );
     }
 
+    const titleError = validatePrintTitle(title);
+    if (titleError) {
+      return NextResponse.json({ error: titleError }, { status: 400 });
+    }
+
+    const contentError = validatePrintContent(content);
+    if (contentError) {
+      return NextResponse.json({ error: contentError }, { status: 400 });
+    }
+
+    const cleanTitle = sanitize(title);
+    const cleanContent = sanitize(content);
+
     const print = await prisma.print.create({
       data: {
-        title,
-        content,
+        title: cleanTitle,
+        content: cleanContent,
         images: images || [],
-        authorId: (session.user as any).id,
+        authorId: userId,
         status: "PENDING",
       },
     });

@@ -3,6 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { validateImageFile } from "@/lib/image-validation";
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
@@ -61,6 +62,12 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -107,7 +114,7 @@ export default function SettingsPage() {
             Change avatar
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               onChange={handleAvatarUpload}
               className="hidden"
             />

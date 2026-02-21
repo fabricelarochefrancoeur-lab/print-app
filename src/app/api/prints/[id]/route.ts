@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitize } from "@/lib/sanitize";
+import { validatePrintTitle, validatePrintContent } from "@/lib/validation";
 
 export async function PUT(
   req: Request,
@@ -34,11 +36,25 @@ export async function PUT(
 
     const { title, content, images } = await req.json();
 
+    if (title !== undefined) {
+      const titleError = validatePrintTitle(title);
+      if (titleError) {
+        return NextResponse.json({ error: titleError }, { status: 400 });
+      }
+    }
+
+    if (content !== undefined) {
+      const contentError = validatePrintContent(content);
+      if (contentError) {
+        return NextResponse.json({ error: contentError }, { status: 400 });
+      }
+    }
+
     const updated = await prisma.print.update({
       where: { id: params.id },
       data: {
-        ...(title !== undefined && { title }),
-        ...(content !== undefined && { content }),
+        ...(title !== undefined && { title: sanitize(title) }),
+        ...(content !== undefined && { content: sanitize(content) }),
         ...(images !== undefined && { images }),
       },
       include: {
