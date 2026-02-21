@@ -122,6 +122,7 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [editions, setEditions] = useState<any[]>([]);
+  const [followingCount, setFollowingCount] = useState<number>(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [openedDate, setOpenedDate] = useState<string | null>(null);
   const [prints, setPrints] = useState<any[]>([]);
@@ -145,8 +146,9 @@ export default function Home() {
       fetch("/api/editions")
         .then((res) => res.json())
         .then((data) => {
-          const eds = Array.isArray(data) ? data : [];
+          const eds = Array.isArray(data.editions) ? data.editions : Array.isArray(data) ? data : [];
           setEditions(eds);
+          if (data.followingCount !== undefined) setFollowingCount(data.followingCount);
 
           // Auto-focus the upcoming edition (tomorrow) without opening
           setSelectedDate(tomorrow);
@@ -281,7 +283,9 @@ export default function Home() {
                 {countdown}
               </p>
               <p className="font-pixel text-lg text-gray-400 mb-8">
-                Follow users to receive their PRINTs in your daily edition.
+                {followingCount > 0
+                  ? "There's no Prints today. Follow more users, write prints and come back tomorrow."
+                  : "Follow users or write your first PRINT."}
               </p>
               <div className="flex justify-center gap-4">
                 <Link
@@ -310,7 +314,9 @@ export default function Home() {
                     No PRINTs yet.
                   </p>
                   <p className="font-pixel text-lg text-gray-400">
-                    Follow users or write your first PRINT.
+                    {followingCount > 0
+                      ? "There's no Prints today. Follow more users, write prints and come back tomorrow."
+                      : "Follow users or write your first PRINT."}
                   </p>
                 </div>
               ) : (

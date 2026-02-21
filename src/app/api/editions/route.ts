@@ -82,9 +82,14 @@ export async function GET(req: Request) {
       },
     });
 
+    // Count how many users the current user follows
+    const followingCount = await prisma.follow.count({
+      where: { followerId: userId },
+    });
+
     console.log("[editions] userId:", userId, "createdAt:", createdAt.toISOString(), "registrationDate:", registrationDate.toISOString(), "today:", today.toISOString(), "editions found:", editions.length, "edition dates:", editions.map(e => e.date.toISOString()));
 
-    return NextResponse.json(editions);
+    return NextResponse.json({ editions, followingCount });
   } catch (error) {
     return NextResponse.json(
       { error: "Something went wrong" },
