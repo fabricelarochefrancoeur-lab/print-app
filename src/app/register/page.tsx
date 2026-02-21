@@ -17,6 +17,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      setError("Password does not meet the requirements");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -116,11 +122,22 @@ export default function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full border-2 border-black px-3 py-2 font-pixel text-lg focus:outline-none focus:ring-2 focus:ring-black"
             required
-            minLength={6}
+            minLength={8}
           />
-          <p className="font-pixel text-xs text-gray-400 mt-1">
-            6 characters minimum
-          </p>
+          <ul className="font-pixel text-xs mt-1 space-y-0.5">
+            <li className={password.length === 0 ? "text-gray-400" : password.length >= 8 ? "text-green-600" : "text-red-500"}>
+              {password.length > 0 && (password.length >= 8 ? "\u2713 " : "\u2717 ")}8 characters minimum
+            </li>
+            <li className={password.length === 0 ? "text-gray-400" : /[A-Z]/.test(password) ? "text-green-600" : "text-red-500"}>
+              {password.length > 0 && (/[A-Z]/.test(password) ? "\u2713 " : "\u2717 ")}1 uppercase letter
+            </li>
+            <li className={password.length === 0 ? "text-gray-400" : /[a-z]/.test(password) ? "text-green-600" : "text-red-500"}>
+              {password.length > 0 && (/[a-z]/.test(password) ? "\u2713 " : "\u2717 ")}1 lowercase letter
+            </li>
+            <li className={password.length === 0 ? "text-gray-400" : /[0-9]/.test(password) ? "text-green-600" : "text-red-500"}>
+              {password.length > 0 && (/[0-9]/.test(password) ? "\u2713 " : "\u2717 ")}1 number
+            </li>
+          </ul>
         </div>
 
         <button
